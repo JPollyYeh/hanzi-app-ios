@@ -10,96 +10,32 @@ const cards = [
   {char:"水",pinyin:"shuǐ",meaning:"water",strokes:4,hint:"竖钩 → 横撇 → 撇 → 捺",example:"喝水 — hē shuǐ — drink water"},
   {char:"山",pinyin:"shān",meaning:"mountain",strokes:3,hint:"竖 → 竖折 → 竖",example:"高山 — gāoshān — high mountain"}
 ];
-
-let order = [...cards];
-let index = 0;
-let attempts = +(localStorage.getItem("attempts") || 0);
-let known = +(localStorage.getItem("known") || 0);
-let streak = +(localStorage.getItem("streak") || 0);
-
-const $ = id => document.getElementById(id);
-const cardEl = $("flashcard");
-const canvas = $("drawCanvas");
-const ctx = canvas.getContext("2d", {alpha:true});
-let paths = [];
-let currentPath = null;
-let drawing = false;
-
-function resizeCanvas(){
-  const rect = canvas.getBoundingClientRect();
-  const scale = window.devicePixelRatio || 1;
-  canvas.width = Math.floor(rect.width * scale);
-  canvas.height = Math.floor(rect.height * scale);
-  ctx.setTransform(scale,0,0,scale,0,0);
-  redraw();
+let order=[...cards], index=0;
+let attempts=+(localStorage.getItem("attempts")||0), known=+(localStorage.getItem("known")||0), streak=+(localStorage.getItem("streak")||0);
+const $=id=>document.getElementById(id), cardEl=$("flashcard"), canvas=$("drawCanvas"), ctx=canvas.getContext("2d");
+let paths=[], currentPath=null, drawing=false;
+function resizeCanvas(){const r=canvas.getBoundingClientRect(),d=window.devicePixelRatio||1;canvas.width=Math.round(r.width*d);canvas.height=Math.round(r.height*d);ctx.setTransform(d,0,0,d,0,0);redraw()}
+function redraw(){const r=canvas.getBoundingClientRect();ctx.clearRect(0,0,r.width,r.height);ctx.lineCap="round";ctx.lineJoin="round";ctx.strokeStyle="#1e1e1c";ctx.lineWidth=6;for(const path of paths){if(!path.length)continue;ctx.beginPath();ctx.moveTo(path[0].x,path[0].y);if(path.length===1){ctx.lineTo(path[0].x+.1,path[0].y+.1)}else for(const p of path.slice(1))ctx.lineTo(p.x,p.y);ctx.stroke()}}
+function posFromClient(x,y){const r=canvas.getBoundingClientRect();return{x:x-r.left,y:y-r.top}}
+function start(p){drawing=true;currentPath=[p];paths.push(currentPath);redraw()}
+function move(p){if(!drawing||!currentPath)return;currentPath.push(p);redraw()}
+function end(){drawing=false;currentPath=null}
+// Pointer Events for modern iOS and Apple Pencil.
+canvas.addEventListener("pointerdown",e=>{e.preventDefault();try{canvas.setPointerCapture(e.pointerId)}catch(_){}start(posFromClient(e.clientX,e.clientY))},{passive:false});
+canvas.addEventListener("pointermove",e=>{if(!drawing)return;e.preventDefault();move(posFromClient(e.clientX,e.clientY))},{passive:false});
+canvas.addEventListener("pointerup",e=>{e.preventDefault();end()},{passive:false});
+canvas.addEventListener("pointercancel",end,{passive:false});
+// Explicit touch fallback for iOS/Safari versions where Pointer Events are unreliable.
+if(!(window.PointerEvent)){
+ canvas.addEventListener("touchstart",e=>{e.preventDefault();const t=e.changedTouches[0];start(posFromClient(t.clientX,t.clientY))},{passive:false});
+ canvas.addEventListener("touchmove",e=>{e.preventDefault();const t=e.changedTouches[0];move(posFromClient(t.clientX,t.clientY))},{passive:false});
+ canvas.addEventListener("touchend",e=>{e.preventDefault();end()},{passive:false});
+ canvas.addEventListener("touchcancel",end,{passive:false});
 }
-function redraw(){
-  const rect = canvas.getBoundingClientRect();
-  ctx.clearRect(0,0,rect.width,rect.height);
-  ctx.lineCap="round"; ctx.lineJoin="round"; ctx.strokeStyle="#1e1e1c"; ctx.lineWidth=6;
-  for(const path of paths){
-    if(path.length<2) continue;
-    ctx.beginPath(); ctx.moveTo(path[0].x,path[0].y);
-    for(const p of path.slice(1)) ctx.lineTo(p.x,p.y);
-    ctx.stroke();
-  }
-}
-function point(e){
-  const r = canvas.getBoundingClientRect();
-  return {x:e.clientX-r.left,y:e.clientY-r.top};
-}
-canvas.addEventListener("pointerdown", e=>{
-  drawing=true; canvas.setPointerCapture(e.pointerId);
-  currentPath=[point(e)]; paths.push(currentPath); redraw();
-});
-canvas.addEventListener("pointermove", e=>{
-  if(!drawing) return;
-  currentPath.push(point(e)); redraw();
-});
-["pointerup","pointercancel","pointerleave"].forEach(type=>canvas.addEventListener(type,()=>{drawing=false;currentPath=null;}));
-
-$("clearBtn").onclick=()=>{paths=[];redraw()};
-$("undoBtn").onclick=()=>{paths.pop();redraw()};
-
-function render(){
-  const c=order[index];
-  $("frontChar").textContent=c.char;
-  $("frontMeaning").textContent=c.meaning;
-  $("backChar").textContent=c.char;
-  $("pinyin").textContent=c.pinyin;
-  $("backMeaning").textContent=c.meaning;
-  $("strokeCount").textContent=`${c.strokes} strokes`;
-  $("strokeHint").textContent=`Suggested order: ${c.hint}`;
-  $("example").textContent=c.example;
-  $("progress").textContent=`Card ${index+1} of ${order.length}`;
-  $("knownCount").textContent=known;
-  $("practiceCount").textContent=attempts;
-  $("streak").textContent=streak;
-  paths=[]; redraw(); cardEl.classList.remove("flipped");
-}
-function flip(on){cardEl.classList.toggle("flipped",on)}
-$("flipToBack").onclick=()=>flip(true);
-$("flipToFront").onclick=()=>flip(false);
-
-document.querySelectorAll(".grade").forEach(btn=>{
-  btn.onclick=()=>{
-    attempts++;
-    if(btn.dataset.grade==="good" || btn.dataset.grade==="easy"){known++;streak++;}
-    else if(btn.dataset.grade==="again"){streak=0;}
-    localStorage.setItem("attempts",attempts);
-    localStorage.setItem("known",known);
-    localStorage.setItem("streak",streak);
-    index=(index+1)%order.length;
-    render();
-  }
-});
-$("shuffleBtn").onclick=()=>{
-  order=[...cards].sort(()=>Math.random()-.5);
-  index=0; render();
-};
-window.addEventListener("resize",resizeCanvas);
-window.addEventListener("load",()=>{render();setTimeout(resizeCanvas,60)});
-
-if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("sw.js").catch(()=>{});
-}
+$("clearBtn").onclick=()=>{paths=[];redraw()};$("undoBtn").onclick=()=>{paths.pop();redraw()};
+function render(){const c=order[index];$("frontChar").textContent=c.char;$("frontMeaning").textContent=c.meaning;$("backChar").textContent=c.char;$("pinyin").textContent=c.pinyin;$("backMeaning").textContent=c.meaning;$("strokeCount").textContent=`${c.strokes} strokes`;$("strokeHint").textContent=`Suggested order: ${c.hint}`;$("example").textContent=c.example;$("progress").textContent=`Card ${index+1} of ${order.length}`;$("knownCount").textContent=known;$("practiceCount").textContent=attempts;$("streak").textContent=streak;paths=[];cardEl.classList.remove("flipped");requestAnimationFrame(resizeCanvas)}
+function flip(on){cardEl.classList.toggle("flipped",on)}$("flipToBack").onclick=()=>flip(true);$("flipToFront").onclick=()=>flip(false);
+document.querySelectorAll(".grade").forEach(btn=>btn.onclick=()=>{attempts++;if(btn.dataset.grade==="good"||btn.dataset.grade==="easy"){known++;streak++}else if(btn.dataset.grade==="again")streak=0;localStorage.setItem("attempts",attempts);localStorage.setItem("known",known);localStorage.setItem("streak",streak);index=(index+1)%order.length;render()});
+$("shuffleBtn").onclick=()=>{order=[...cards].sort(()=>Math.random()-.5);index=0;render()};
+window.addEventListener("resize",()=>requestAnimationFrame(resizeCanvas));window.addEventListener("orientationchange",()=>setTimeout(resizeCanvas,250));window.addEventListener("load",()=>{render();setTimeout(resizeCanvas,150)});
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
