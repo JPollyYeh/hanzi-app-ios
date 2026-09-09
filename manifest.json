@@ -1,0 +1,9 @@
+{
+  "name": "Hanzi Cards — Chinese Flashcards",
+  "short_name": "Hanzi Cards",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f4efe7",
+  "theme_color": "#f4efe7",
+  "icons": [{"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+}
