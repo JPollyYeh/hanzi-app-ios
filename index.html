@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#f4efe7" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Hanzi Cards" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <link rel="stylesheet" href="styles.css" />
+  <title>Hanzi Cards</title>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <div>
+        <h1>Hanzi Cards</h1>
+        <p id="progress">Card 1 of 10</p>
+      </div>
+      <button id="shuffleBtn" class="small">Shuffle</button>
+    </header>
+
+    <section class="card-shell">
+      <div id="flashcard" class="flashcard" aria-live="polite">
+        <div class="face front">
+          <div class="eyebrow">LEARN + WRITE</div>
+          <div id="frontChar" class="hanzi">你</div>
+          <div id="frontMeaning" class="meaning">you</div>
+
+          <div class="stroke-box">
+            <div class="stroke-head">
+              <strong>Stroke practice</strong>
+              <span id="strokeCount">7 strokes</span>
+            </div>
+            <canvas id="drawCanvas"></canvas>
+            <div id="strokeHint" class="hint"></div>
+            <div class="canvas-actions">
+              <button id="clearBtn">Clear</button>
+              <button id="undoBtn">Undo</button>
+            </div>
+          </div>
+
+          <button id="flipToBack" class="primary">Flip for answer</button>
+        </div>
+
+        <div class="face back">
+          <div class="eyebrow">ANSWER</div>
+          <div id="backChar" class="hanzi medium">你</div>
+          <div id="pinyin" class="pinyin">nǐ</div>
+          <div id="backMeaning" class="meaning large">you</div>
+          <div id="example" class="example">你好 — nǐ hǎo — hello</div>
+
+          <div class="grade-row">
+            <button class="grade again" data-grade="again">Again</button>
+            <button class="grade hard" data-grade="hard">Hard</button>
+            <button class="grade good" data-grade="good">Good</button>
+            <button class="grade easy" data-grade="easy">Easy</button>
+          </div>
+
+          <button id="flipToFront">Back to writing</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="stats">
+      <div><strong id="knownCount">0</strong><span>Good/Easy</span></div>
+      <div><strong id="practiceCount">0</strong><span>Attempts</span></div>
+      <div><strong id="streak">0</strong><span>Streak</span></div>
+    </section>
+
+    <footer>
+      Draw each character with your finger or Apple Pencil. This starter version gives stroke-order hints; later you can plug in full stroke-path data for automatic checking.
+    </footer>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
